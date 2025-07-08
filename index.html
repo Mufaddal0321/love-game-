@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+  <title>Catch My Heart for Amrutha</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      background: linear-gradient(135deg, #ffcce0, #ffe6f0);
+      font-family: 'Poppins', sans-serif;
+      touch-action: none;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      z-index: 1;
+    }
+
+    #startScreen, #gameOver {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(135deg, #ffcce0, #ff99cc);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 10;
+    }
+
+    #startScreen h1, #gameOver div {
+      font-size: 2.5rem;
+      color: #fff;
+      text-shadow: 2px 2px 5px #cc1a4f;
+    }
+
+    #startScreen p {
+      font-size: 1.2rem;
+      color: #fff;
+      margin-bottom: 20px;
+      text-shadow: 1px 1px 2px #cc1a4f;
+    }
+
+    #startBtn, #restartBtn {
+      padding: 12px 25px;
+      font-size: 18px;
+      background-color: #ff4da6;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    #score {
+      position: fixed;
+      top: 10px;
+      left: 15px;
+      color: white;
+      font-size: 22px;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px #cc1a4f;
+      z-index: 2;
+    }
+
+    #milestoneMessage {
+      position: fixed;
+      top: 35%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 26px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 2px 2px 5px #cc1a4f;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <div id="startScreen">
+    <h1>Catch My Heart 💘</h1>
+    <p>Hey Amrutha, can you catch all the love falling from my heart? 💕</p>
+    <button id="startBtn">Start Playing</button>
+  </div>
+
+  <div id="score">Score: 0</div>
+  <canvas id="gameCanvas"></canvas>
+  <div id="milestoneMessage"></div>
+  <div id="gameOver" style="display:none">
+    <div>You missed my love 💔<br>Game Over</div>
+    <button id="restartBtn">Try Again 💘</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreDisplay = document.getElementById("score");
+    const gameOverScreen = document.getElementById("gameOver");
+    const restartBtn = document.getElementById("restartBtn");
+    const startScreen = document.getElementById("startScreen");
+    const startBtn = document.getElementById("startBtn");
+    const milestoneMsg = document.getElementById("milestoneMessage");
+
+    let W, H, basket, hearts, score, gameOver, pointerX = null;
+    const messages = {
+      10: "You're doing great 💖",
+      20: "Wow! Amazing 😍",
+      30: "You’re glowing 💫",
+      40: "So much love! 💞",
+      50: "Halfway to full heart! ❤️",
+      60: "Cuteness overload 💕",
+      70: "Almost there 🔥",
+      80: "True love vibes 💘",
+      90: "Incredible catch 💗",
+      100: "You caught my full heart! 💝"
+    };
+
+    function resizeCanvas() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W;
+      canvas.height = H;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function initGame() {
+      basket = { x: W / 2 - 40, y: H - 80, width: 80, height: 20 };
+      hearts = [];
+      score = 0;
+      gameOver = false;
+      pointerX = null;
+      scoreDisplay.innerText = "Score: 0";
+      milestoneMsg.style.opacity = 0;
+      gameOverScreen.style.display = "none";
+    }
+
+    function drawBasket() {
+      ctx.fillStyle = "#ff4da6";
+      ctx.beginPath();
+      ctx.roundRect(basket.x, basket.y, basket.width, basket.height, 10);
+      ctx.fill();
+    }
+
+    CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+      this.beginPath();
+      this.moveTo(x + r, y);
+      this.lineTo(x + w - r, y);
+      this.quadraticCurveTo(x + w, y, x + w, y + r);
+      this.lineTo(x + w, y + h - r);
+      this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      this.lineTo(x + r, y + h);
+      this.quadraticCurveTo(x, y + h, x, y + h - r);
+      this.lineTo(x, y + r);
+      this.quadraticCurveTo(x, y, x + r, y);
+      this.closePath();
+    };
+
+    function drawHeart(x, y) {
+      ctx.fillStyle = "#ff1744";
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.bezierCurveTo(x, y - 10, x - 15, y - 15, x - 15, y);
+      ctx.bezierCurveTo(x - 15, y + 10, x, y + 20, x, y + 25);
+      ctx.bezierCurveTo(x, y + 20, x + 15, y + 10, x + 15, y);
+      ctx.bezierCurveTo(x + 15, y - 15, x, y - 10, x, y);
+      ctx.fill();
+    }
+
+    function showMilestoneMessage(text) {
+      milestoneMsg.innerText = text;
+      milestoneMsg.style.opacity = 1;
+      setTimeout(() => milestoneMsg.style.opacity = 0, 1500);
+    }
+
+    function update() {
+      if (gameOver) return;
+      ctx.clearRect(0, 0, W, H);
+      drawBasket();
+
+      if (pointerX !== null) {
+        const dx = pointerX - (basket.x + basket.width / 2);
+        basket.x += dx * 0.1;
+        if (basket.x < 0) basket.x = 0;
+        if (basket.x + basket.width > W) basket.x = W - basket.width;
+      }
+
+      hearts.forEach((heart, index) => {
+        heart.y += 2;
+        drawHeart(heart.x, heart.y);
+        if (
+          heart.y + 25 > basket.y &&
+          heart.x > basket.x &&
+          heart.x < basket.x + basket.width
+        ) {
+          hearts.splice(index, 1);
+          score++;
+          scoreDisplay.innerText = "Score: " + score;
+          if (messages[score]) showMilestoneMessage(messages[score]);
+        }
+        if (heart.y > H) triggerGameOver();
+      });
+
+      requestAnimationFrame(update);
+    }
+
+    function spawnHeart() {
+      if (!gameOver) {
+        const x = Math.random() * (W - 30) + 15;
+        hearts.push({ x: x, y: 0 });
+      }
+    }
+
+    function triggerGameOver() {
+      gameOver = true;
+      gameOverScreen.style.display = "flex";
+    }
+
+    restartBtn.addEventListener("click", () => {
+      initGame();
+      update();
+    });
+
+    startBtn.addEventListener("click", () => {
+      startScreen.style.display = "none";
+      initGame();
+      update();
+      setInterval(spawnHeart, 1000);
+    });
+
+    canvas.addEventListener("touchstart", e => pointerX = e.touches[0].clientX);
+    canvas.addEventListener("touchmove", e => pointerX = e.touches[0].clientX);
+    canvas.addEventListener("touchend", () => pointerX = null);
+    canvas.addEventListener("mousedown", e => pointerX = e.clientX);
+    canvas.addEventListener("mousemove", e => { if (pointerX !== null) pointerX = e.clientX });
+    canvas.addEventListener("mouseup", () => pointerX = null);
+  </script>
+</body>
+</html>
